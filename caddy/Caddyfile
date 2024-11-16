@@ -14,5 +14,11 @@
 
 {$TLS_DOMAINS} {
 	{$CADDY_TLS}
+
+	handle /grafana* {
+		reverse_proxy http://immich-grafana:3000
+	}
+
 	reverse_proxy http://immich-server:2283
+
 }

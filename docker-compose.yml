@@ -2,9 +2,11 @@ name: immich
 
 # Volumes #####################################################################
 volumes:
+  caddy-data:
   model-cache:
   prometheus-data:
   grafana-data:
+  postgres-data:
 
 # Networks ####################################################################
 networks:
@@ -16,7 +18,7 @@ networks:
 services:
   immich-server:
     container_name: immich_server
-    image: immich-server:latest
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
     # extends:
     #   file: hwaccel.transcoding.yml
     #   service: cpu # set to one of [nvenc, quicksync, rkmpp, vaapi, vaapi-wsl] for accelerated transcoding
@@ -26,6 +28,7 @@ services:
     volumes:
       - ${UPLOAD_LOCATION}/photos:/usr/src/app/upload
       - /etc/localtime:/etc/localtime:ro
+      - ./external/:/external
     env_file:
       - .env
     # ports:
@@ -41,7 +44,7 @@ services:
 
   immich-machine-learning:
     container_name: immich_machine_learning
-    image: immich-machine-learning:latest
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
     # extends:
     #   file: hwaccel.ml.yml
     #   service: cpu # set to one of [armnn, cuda, openvino, openvino-wsl] for accelerated inference
@@ -64,7 +67,7 @@ services:
 
   redis:
     container_name: immich_redis
-    image: redis:6.2-alpine@sha256:2ba50e1ac3a0ea17b736ce9db2b0a9f6f8b85d4c27d5f5accc6a416d8f42c6d5
+    image: redis:7-alpine
     networks:
       - net
     healthcheck:
@@ -82,7 +85,7 @@ services:
       POSTGRES_DB: ${DB_DATABASE_NAME}
       POSTGRES_INITDB_ARGS: '--data-checksums'
     volumes:
-      - ${UPLOAD_LOCATION}/postgres:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
     # ports:
     #   - 5432:5432
     networks:
@@ -117,7 +120,7 @@ services:
     #   - 9090:9090
     image: prom/prometheus@sha256:378f4e03703557d1c6419e6caccf922f96e6d88a530f7431d66a4c4f4b1000fe
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    #   - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus-data:/prometheus
     networks:
       - net
@@ -134,6 +137,12 @@ services:
       - grafana-data:/var/lib/grafana
     networks:
       - net
+    environment:
+      GF_SERVER_DOMAIN: localhost
+      GF_SERVER_ROOT_URL: "https://localhost/grafana"
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: changeMe
 
   # Caddy ---------------------------------------------------------------------
   caddy:
@@ -150,6 +159,7 @@ services:
     networks:
       - net
     volumes:
+      - caddy-data:/data
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile
     logging:
       options:
