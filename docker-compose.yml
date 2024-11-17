@@ -17,6 +17,12 @@ volumes:
       device: "${EXTERNAL_LOCATION}"
 
   postgres-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "${DB_DATA_LOCATION}"
+
   caddy-data:
   model-cache:
   prometheus-data:
