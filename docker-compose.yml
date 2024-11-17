@@ -2,11 +2,25 @@ name: immich
 
 # Volumes #####################################################################
 volumes:
+  immich-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "${UPLOAD_LOCATION}"
+
+  immich-external:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "${EXTERNAL_LOCATION}"
+
+  postgres-data:
   caddy-data:
   model-cache:
   prometheus-data:
   grafana-data:
-  postgres-data:
 
 # Networks ####################################################################
 networks:
@@ -26,9 +40,9 @@ services:
       context: ../
       dockerfile: server/Dockerfile
     volumes:
-      - ${UPLOAD_LOCATION}/photos:/usr/src/app/upload
+      - immich-data:/usr/src/app/upload
       - /etc/localtime:/etc/localtime:ro
-      - ./external/:/external
+      - immich-external:/external:ro
     env_file:
       - .env
     # ports:
@@ -44,7 +58,7 @@ services:
 
   immich-machine-learning:
     container_name: immich_machine_learning
-    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}-cuda
     extends:
       file: hwaccel.ml.yml
       service: cuda # set to one of [armnn, cuda, openvino, openvino-wsl] for accelerated inference
@@ -67,7 +81,7 @@ services:
 
   redis:
     container_name: immich_redis
-    image: redis:7-alpine
+    image: docker.io/redis:6.2-alpine@sha256:2ba50e1ac3a0ea17b736ce9db2b0a9f6f8b85d4c27d5f5accc6a416d8f42c6d5
     networks:
       - net
     healthcheck:
