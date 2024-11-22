@@ -48,7 +48,7 @@ services:
     volumes:
       - immich-data:/usr/src/app/upload
       - /etc/localtime:/etc/localtime:ro
-      - immich-external:/external:ro
+      # - immich-external:/external:ro
     env_file:
       - .env
     # ports:
