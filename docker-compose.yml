@@ -9,12 +9,12 @@ volumes:
       o: bind
       device: "${UPLOAD_LOCATION}"
 
-  immich-external:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: "${EXTERNAL_LOCATION}"
+  # immich-external:
+  #   driver: local
+  #   driver_opts:
+  #     type: none
+  #     o: bind
+  #     device: "/path/to/external"
 
   postgres-data:
     driver: local
@@ -56,11 +56,15 @@ services:
     depends_on:
       - redis
       - database
-    restart: always
+    restart: unless-stopped
     networks:
       - net
     healthcheck:
       disable: false
+    logging:
+      options:
+        max-size: ${DOCKER_LOGGING_MAX_SIZE:?DOCKER_LOGGING_MAX_SIZE not set}
+        max-file: ${DOCKER_LOGGING_MAX_FILE:?DOCKER_LOGGING_MAX_FILE not set}
 
   immich-machine-learning:
     container_name: immich_machine_learning
@@ -79,11 +83,15 @@ services:
       - model-cache:/cache
     env_file:
       - .env
-    restart: always
+    restart: unless-stopped
     networks:
       - net
     healthcheck:
       disable: false
+    logging:
+      options:
+        max-size: ${DOCKER_LOGGING_MAX_SIZE:?DOCKER_LOGGING_MAX_SIZE not set}
+        max-file: ${DOCKER_LOGGING_MAX_FILE:?DOCKER_LOGGING_MAX_FILE not set}
 
   redis:
     container_name: immich_redis
@@ -92,7 +100,11 @@ services:
       - net
     healthcheck:
       test: redis-cli ping || exit 1
-    restart: always
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: ${DOCKER_LOGGING_MAX_SIZE:?DOCKER_LOGGING_MAX_SIZE not set}
+        max-file: ${DOCKER_LOGGING_MAX_FILE:?DOCKER_LOGGING_MAX_FILE not set}
 
   database:
     container_name: immich_postgres
@@ -131,7 +143,11 @@ services:
         '-c',
         'wal_compression=on',
       ]
-    restart: always
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: ${DOCKER_LOGGING_MAX_SIZE:?DOCKER_LOGGING_MAX_SIZE not set}
+        max-file: ${DOCKER_LOGGING_MAX_FILE:?DOCKER_LOGGING_MAX_FILE not set}
 
   # set IMMICH_TELEMETRY_INCLUDE=all in .env to enable metrics
   immich-prometheus:
@@ -144,6 +160,10 @@ services:
       - prometheus-data:/prometheus
     networks:
       - net
+    logging:
+      options:
+        max-size: ${DOCKER_LOGGING_MAX_SIZE:?DOCKER_LOGGING_MAX_SIZE not set}
+        max-file: ${DOCKER_LOGGING_MAX_FILE:?DOCKER_LOGGING_MAX_FILE not set}
 
   # first login uses admin/admin
   # add data source for http://immich-prometheus:9090 to get started
@@ -157,12 +177,10 @@ services:
       - grafana-data:/var/lib/grafana
     networks:
       - net
-    environment:
-      GF_SERVER_DOMAIN: localhost
-      GF_SERVER_ROOT_URL: "https://localhost/grafana"
-      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: changeMe
+    logging:
+      options:
+        max-size: ${DOCKER_LOGGING_MAX_SIZE:?DOCKER_LOGGING_MAX_SIZE not set}
+        max-file: ${DOCKER_LOGGING_MAX_FILE:?DOCKER_LOGGING_MAX_FILE not set}
 
   # Caddy ---------------------------------------------------------------------
   caddy:
